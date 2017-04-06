@@ -19,8 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{849356D9-0F30-43A5-874A-662E62D937EB}</ProjectGuid>
-    <RootNamespace>GPUAssaginemt</RootNamespace>
+    <ProjectGuid>{DD4DC25B-2455-480F-A74C-FD9B2B494913}</ProjectGuid>
+    <RootNamespace>Optimize</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -151,7 +151,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="cputest.cpp" />
+    <CudaCompile Include="optimize.cu" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

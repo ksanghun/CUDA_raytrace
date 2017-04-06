@@ -1,7 +1,7 @@
 // Visible Spheres - after Sanders and Kandrot CUDA by Example
 // raytrace.cu
 
-/*
+
 
 #include <chrono>
 #include <algorithm>
@@ -44,25 +44,25 @@ class Vec3
 {
 public:
 	T x, y, z;
-//	__host__ __device__ Vec3() : x(0), y(0), z(0) {}
-	__host__ __device__ Vec3(){}
-	__host__ __device__ void init(){
+
+	__host__ __device__ Vec3() {}
+	__host__ __device__ void init() {
 		x = 0;
 		y = 0;
 		z = 0;
 	}
-	__host__ __device__ void init(T _v){
+	__host__ __device__ void init(T _v) {
 		x = _v;
 		y = _v;
 		z = _v;
 	}
-	__host__ __device__ void init(T _x, T _y, T _z){
+	__host__ __device__ void init(T _x, T _y, T _z) {
 		x = _x;
 		y = _y;
 		z = _z;
 	}
 
-	__host__ __device__ Vec3& normalize(){
+	__host__ __device__ Vec3& normalize() {
 		T nor2 = length2();
 		if (nor2 > 0) {
 			T invNor = 1 / sqrt(nor2);
@@ -71,37 +71,31 @@ public:
 		return *this;
 	}
 
-	__host__ __device__ Vec3<T> operator * (const T &f) const { 
+	__host__ __device__ Vec3<T> operator * (const T &f) const {
 		Vec3<T> t;
 		t.init(x * f, y * f, z * f);
 		return t;
 	}
-	__host__ __device__ Vec3<T> operator * (const Vec3<T> &v) const { 
+	__host__ __device__ Vec3<T> operator * (const Vec3<T> &v) const {
 		Vec3<T> t;
 		t.init(x * v.x, y * v.y, z * v.z);
 		return t;
 	}
 	__host__ __device__ T dot(const Vec3<T> &v) const { return x * v.x + y * v.y + z * v.z; }
-	__host__ __device__ Vec3<T> operator - (const Vec3<T> &v) const { 
+	__host__ __device__ Vec3<T> operator - (const Vec3<T> &v) const {
 		Vec3<T> t;
 		t.init(x - v.x, y - v.y, z - v.z);
 		return t;
 	}
-	__host__ __device__ Vec3<T> operator + (const Vec3<T> &v) const { 
+	__host__ __device__ Vec3<T> operator + (const Vec3<T> &v) const {
 		Vec3<T> t;
 		t.init(x + v.x, y + v.y, z + v.z);
 		return t;
 	}
 	__host__ __device__ Vec3<T>& operator += (const Vec3<T> &v) { x += v.x, y += v.y, z += v.z; return *this; }
 	__host__ __device__ Vec3<T>& operator *= (const Vec3<T> &v) { x *= v.x, y *= v.y, z *= v.z; return *this; }
-//	__host__ __device__ Vec3<T> operator - () const { return Vec3<T>(-x, -y, -z); }
 	__host__ __device__ T length2() const { return x * x + y * y + z * z; }
 	__host__ __device__ T length() const { return sqrt(length2()); }
-	//friend std::ostream & operator << (std::ostream &os, const Vec3<T> &v)
-	//{
-	//	os << "[" << v.x << " " << v.y << " " << v.z << "]";
-	//	return os;
-	//}
 };
 
 typedef Vec3<float> Vec3f;
@@ -113,10 +107,9 @@ class Sphere {
 	Vec3f surfaceColor, emissionColor;      /// surface color and emission (light)
 	float transparency, reflection;         /// surface transparency and reflectivity
 
-	//float x, y, z, r;
 public:
 	Sphere() {}
-	void init(Vec3f c,const float r, Vec3f sc, float refl,	float transp, Vec3f ec){
+	void init(Vec3f c, const float r, Vec3f sc, float refl, float transp, Vec3f ec) {
 		center = c;
 		radius = r;
 		radius2 = r*r;
@@ -156,18 +149,16 @@ public:
 	}
 };
 
-__constant__ Sphere d_sphere[M_SPHERES];
-
 __host__ __device__ float mix(const float &a, const float &b, const float &mix)
 {
 	return b * mix + a * (1 - mix);
 }
 
-__host__ __device__ void trace(Vec3f rayorig, Vec3f raydir, const int depth, Vec3f* pixel, int k)
+__host__ __device__ void trace(Vec3f rayorig, Vec3f raydir, const int depth, Vec3f* pixel, Sphere* d_sphere, int k)
 {
 	float tnear = INFINITY;
-	//	const Sphere* sphere = NULL;
 	int idx = -1;
+
 	// find intersection of this ray with the sphere in the scene
 	for (unsigned i = 0; i < M_SPHERES; ++i) {
 		float t0 = INFINITY, t1 = INFINITY;
@@ -175,17 +166,17 @@ __host__ __device__ void trace(Vec3f rayorig, Vec3f raydir, const int depth, Vec
 			if (t0 < 0) t0 = t1;
 			if (t0 < tnear) {   // find the closest intersection of speres
 				tnear = t0;
-				//	sphere = &d_sphere[i];
 				idx = i;
 			}
 		}
 	}
+	
 	// if there's no intersection return black or background color
-	if (idx<0){
+	if (idx<0) {
 		pixel[k].init(1.0f, 0.5f, 0.5f);
 		return;
 	}
-	else{
+	else {
 		Vec3f surfaceColor;
 		surfaceColor.init(0);
 		Vec3f phit = rayorig + raydir * tnear; // point of intersection
@@ -194,7 +185,7 @@ __host__ __device__ void trace(Vec3f rayorig, Vec3f raydir, const int depth, Vec
 
 		float bias = 1e-4; // add some bias to the point from which we will be tracing
 		bool inside = false;
-		if (raydir.dot(nhit) > 0){
+		if (raydir.dot(nhit) > 0) {
 			nhit.x = -nhit.x;
 			nhit.y = -nhit.y;
 			nhit.z = -nhit.z;
@@ -202,17 +193,19 @@ __host__ __device__ void trace(Vec3f rayorig, Vec3f raydir, const int depth, Vec
 		}
 		if ((d_sphere[idx].getTransparency() > 0 || d_sphere[idx].getReflection() > 0) && depth < MAX_RAY_DEPTH) {
 			float facingratio = -raydir.dot(nhit);
+			
 			// change the mix value to tweak the effect
 			float fresneleffect = mix(pow(1 - facingratio, 3), 1, 0.1);
-//			float fresneleffect = 1.0f;
+
 			// compute reflection direction (not need to normalize because all vectors
 			// are already normalized)
 			Vec3f refldir = raydir - nhit * 2 * raydir.dot(nhit);
 			refldir.normalize();
-	//		Vec3f reflection = trace(phit + nhit * bias, refldir, depth + 1, pixel, k);
-			trace(phit + nhit * bias, refldir, depth + 1, pixel, k);
+			trace(phit + nhit * bias, refldir, depth + 1, pixel, d_sphere, k);
+
 			Vec3f refraction;
 			refraction.init(0.5);
+
 			// if the sphere is also transparent compute refraction ray (transmission)
 			if (d_sphere[idx].getTransparency()) {
 				float ior = 1.1, eta = (inside) ? ior : 1 / ior; // are we inside or outside the surface?
@@ -220,18 +213,13 @@ __host__ __device__ void trace(Vec3f rayorig, Vec3f raydir, const int depth, Vec
 				float k = 1 - eta * eta * (1 - cosi * cosi);
 				Vec3f refrdir = raydir * eta + nhit * (eta *  cosi - sqrt(k));
 				refrdir.normalize();
-				//	refraction = trace(phit - nhit * bias, refrdir, spheres, depth + 1);
-				trace(phit + nhit * bias, refldir, depth + 1, pixel, k);
+				trace(phit + nhit * bias, refldir, depth + 1, pixel, d_sphere, k);
 			}
 			// the result is a mix of reflection and refraction (if the sphere is transparent)
 			Vec3f reflection = pixel[k];
 			surfaceColor = (
 				reflection * fresneleffect +
 				refraction * (1 - fresneleffect) * d_sphere[idx].getTransparency()) * d_sphere[idx].getSurfaceCr();
-
-			//Vec3f refldir = raydir - nhit * 2 * raydir.dot(nhit);
-			//trace(phit + nhit * bias, refldir, depth + 1, pixel, k);
-			//surfaceColor.init(0.0f, 0.0f, 1.0f);
 		}
 		else {
 			// it's a diffuse object, no need to raytrace any further
@@ -263,11 +251,10 @@ __host__ __device__ void trace(Vec3f rayorig, Vec3f raydir, const int depth, Vec
 	}
 }
 
-__global__ void render(float fov, float viewangle, float aspectratio, float iwidth, float iheight, Vec3f* pixel)
+__global__ void render(float fov, float viewangle, float aspectratio, float iwidth, float iheight, Vec3f* pixel, Sphere* d_sphere)
 {
 	int x = threadIdx.x + blockIdx.x * blockDim.x;
 	int y = threadIdx.y + blockIdx.y * blockDim.y;
-//	int k = x + y * blockDim.x * gridDim.x;
 	int k = x + y * IMG_RES;
 
 	// shared ? //
@@ -280,9 +267,7 @@ __global__ void render(float fov, float viewangle, float aspectratio, float iwid
 	//===========================================//
 
 	// trace //
-	trace(rayorig, raydir, 0, pixel, k);
-	
-	
+	trace(rayorig, raydir, 0, pixel, d_sphere, k);
 }
 
 
@@ -311,7 +296,7 @@ bool SaveImage(char* szPathName, unsigned char* img, int w, int h) {
 	bmpinfoheader[10] = (unsigned char)(h >> 16);
 	bmpinfoheader[11] = (unsigned char)(h >> 24);
 
-	f = fopen("img.bmp", "wb");
+	f = fopen(szPathName, "wb");
 	fwrite(bmpfileheader, 1, 14, f);
 	fwrite(bmpinfoheader, 1, 40, f);
 	for (int i = 0; i<h; i++)
@@ -335,30 +320,33 @@ int main(int argc, char* argv[]) {
 	Sphere* h_sphere = new Sphere[M_SPHERES];
 
 	Vec3f center, sc, ec;
-	center.init(0.0f, -10004.0f, -20.0f);	sc.init(0.20f, 0.20f, 0.20f);	ec.init(0.0f);
+	center.init(0.0f, -10004.0f, -20.0f);	sc.init(0.30f, 0.30f, 0.30f);	ec.init(0.0f);
 	h_sphere[0].init(center, 10000.0f, sc, 0.0f, 0.0f, ec);
 
-	center.init(0.0, 0, -20);	sc.init(1.00, 0.32, 0.36);	ec.init(0.0f);
+	center.init(0.0, 0, -20);	sc.init(1.00, 0.32, 0.36);	ec.init(0.1f);
 	h_sphere[1].init(center, 4.0f, sc, 1.0f, 0.5f, ec);
 
-	center.init(5.0, -1, -15);	sc.init(0.90, 0.76, 0.46);	ec.init(0.0f);
+	center.init(5.0, -1, -15);	sc.init(0.10, 0.96, 0.96);	ec.init(0.2f);
 	h_sphere[2].init(center, 2.0f, sc, 1.0f, 0.0f, ec);
 
-	center.init(5.0, 0, -25);	sc.init(0.65, 0.97, 0.97);	ec.init(0.0f);
+	center.init(5.0, 0, -25);	sc.init(0.3f, 0.07, 0.97);	ec.init(0.2f);
 	h_sphere[3].init(center, 3.0f, sc, 1.0f, 0.0f, ec);
 
-	center.init(-5.5, 0, -15);	sc.init(0.70, 0.90, 0.70);	ec.init(0.0f);
+	center.init(-5.5, 0, -15);	sc.init(0.10, 0.99, 0.20);	ec.init(0.3f);
 	h_sphere[4].init(center, 3.0f, sc, 1.0f, 0.0f, ec);
-			
-	// light	
-	center.init(-10.0, 50, 30);	sc.init(0.00, 0.00, 0.00);	ec.init(3.0f);
+
+	// light
+	center.init(-10.0, 50, 30);	sc.init(0.00, 0.00, 0.00);	ec.init(4.0f);
 	h_sphere[5].init(center, 3.0f, sc, 0.0f, 0.0f, ec);
 
+
+	Sphere* d_sphere;
+	cudaMalloc((void**)&d_sphere, sizeof(Sphere) * M_SPHERES);
 
 	std::chrono::steady_clock::time_point ts, te;
 	ts = std::chrono::steady_clock::now();
 	// memcpy from host to device
-	cudaMemcpyToSymbol(d_sphere, h_sphere, sizeof(Sphere) * M_SPHERES);
+	cudaMemcpy(d_sphere, h_sphere, sizeof(Sphere) * M_SPHERES, cudaMemcpyHostToDevice);
 	delete[] h_sphere;
 
 	te = std::chrono::steady_clock::now();
@@ -367,7 +355,7 @@ int main(int argc, char* argv[]) {
 	// allocate device memory for hit data
 	ts = std::chrono::steady_clock::now();
 	Vec3f* d_a;
-	cudaMalloc((void**)&d_a, IMG_RES*IMG_RES*sizeof(Vec3f));
+	cudaMalloc((void**)&d_a, IMG_RES*IMG_RES * sizeof(Vec3f));
 	te = std::chrono::steady_clock::now();
 	reportTime("Host to Device(cudaMalloc) Time: ", te - ts);
 
@@ -379,46 +367,40 @@ int main(int argc, char* argv[]) {
 	float invWidth = 1 / float(width), invHeight = 1 / float(height);
 	float fov = 45, aspectratio = width / float(height);
 	float angle = tan(M_PI * 0.5 * fov / 180.);
-
+	Vec3f* h_a = new Vec3f[IMG_RES*IMG_RES];
 
 	checkCUDAError("pre-raytraceRay error");
 
-//	std::chrono::steady_clock::time_point ts, te;
 	ts = std::chrono::steady_clock::now();
+	unsigned char* imgbuff = new unsigned char[width*height * 3];
 
-	for (int i = 0; i < 1000; i++){
-		render << <dimGrid, dimBlock >> >(fov, angle, aspectratio, invWidth, invHeight, d_a);
+	for (int i = 0; i < 1000; i++)
+	{
+		fov += 0.1;
+		angle = tan(M_PI * 0.5 * fov / 180.);
+		render << <dimGrid, dimBlock >> >(fov, angle, aspectratio, invWidth, invHeight, d_a, d_sphere);
+		cudaMemcpy(h_a, d_a, IMG_RES*IMG_RES * sizeof(Vec3f), cudaMemcpyDeviceToHost);
+
+		// save image
+		for (unsigned i = 0; i < width * height; ++i) {
+			imgbuff[i * 3] = (unsigned char)(std::min(float(1), h_a[i].x) * 255);
+			imgbuff[i * 3 + 1] = (unsigned char)(std::min(float(1), h_a[i].y) * 255);
+			imgbuff[i * 3 + 2] = (unsigned char)(std::min(float(1), h_a[i].z) * 255);
+
+		}
+		char fname[64] = { 0, };
+		sprintf(fname, "%d.bmp", i + 1);
+		SaveImage(fname, imgbuff, width, height);
 	}
 
 	te = std::chrono::steady_clock::now();
 	reportTime("Render Time: ", te - ts);
 
 	checkCUDAError("raytraceRay error");
-
-
-	ts = std::chrono::steady_clock::now();
-	// copy hit data to host
-	Vec3f* h_a = new Vec3f[IMG_RES*IMG_RES];
-	cudaMemcpy(h_a, d_a, IMG_RES*IMG_RES*sizeof(Vec3f), cudaMemcpyDeviceToHost);
-	te = std::chrono::steady_clock::now();
-	reportTime("Device to Host Time: ", te - ts);
-
-
-	unsigned char* imgbuff = new unsigned char[width*height * 3];
-	for (unsigned i = 0; i < width * height; ++i) {
-		imgbuff[i * 3] = (unsigned char)(std::min(float(1), h_a[i].x) * 255);
-		imgbuff[i * 3 + 1] = (unsigned char)(std::min(float(1), h_a[i].y) * 255);
-		imgbuff[i * 3 + 2] = (unsigned char)(std::min(float(1), h_a[i].z) * 255);
-
-	}
-	SaveImage("./test.bmp", imgbuff, width, height);
-
+	
 	// clean up
 	delete[] imgbuff;
 	delete[] h_a;
 	cudaFree(d_a);
+	cudaFree(d_sphere);
 }
-
-
-
-*/

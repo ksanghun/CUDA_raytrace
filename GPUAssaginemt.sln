@@ -1,9 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30501.0
+VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GPUAssaginemt", "GPUAssaginemt\GPUAssaginemt.vcxproj", "{849356D9-0F30-43A5-874A-662E62D937EB}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Parallelize", "Parallelize\Parallelize.vcxproj", "{E95C5F63-92AE-4538-8BDC-BA9E4C893228}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Optimize", "Optimize\Optimize.vcxproj", "{DD4DC25B-2455-480F-A74C-FD9B2B494913}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +25,22 @@ Global
 		{849356D9-0F30-43A5-874A-662E62D937EB}.Release|Win32.Build.0 = Release|Win32
 		{849356D9-0F30-43A5-874A-662E62D937EB}.Release|x64.ActiveCfg = Release|x64
 		{849356D9-0F30-43A5-874A-662E62D937EB}.Release|x64.Build.0 = Release|x64
+		{E95C5F63-92AE-4538-8BDC-BA9E4C893228}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E95C5F63-92AE-4538-8BDC-BA9E4C893228}.Debug|Win32.Build.0 = Debug|Win32
+		{E95C5F63-92AE-4538-8BDC-BA9E4C893228}.Debug|x64.ActiveCfg = Debug|x64
+		{E95C5F63-92AE-4538-8BDC-BA9E4C893228}.Debug|x64.Build.0 = Debug|x64
+		{E95C5F63-92AE-4538-8BDC-BA9E4C893228}.Release|Win32.ActiveCfg = Release|Win32
+		{E95C5F63-92AE-4538-8BDC-BA9E4C893228}.Release|Win32.Build.0 = Release|Win32
+		{E95C5F63-92AE-4538-8BDC-BA9E4C893228}.Release|x64.ActiveCfg = Release|x64
+		{E95C5F63-92AE-4538-8BDC-BA9E4C893228}.Release|x64.Build.0 = Release|x64
+		{DD4DC25B-2455-480F-A74C-FD9B2B494913}.Debug|Win32.ActiveCfg = Debug|Win32
+		{DD4DC25B-2455-480F-A74C-FD9B2B494913}.Debug|Win32.Build.0 = Debug|Win32
+		{DD4DC25B-2455-480F-A74C-FD9B2B494913}.Debug|x64.ActiveCfg = Debug|x64
+		{DD4DC25B-2455-480F-A74C-FD9B2B494913}.Debug|x64.Build.0 = Debug|x64
+		{DD4DC25B-2455-480F-A74C-FD9B2B494913}.Release|Win32.ActiveCfg = Release|Win32
+		{DD4DC25B-2455-480F-A74C-FD9B2B494913}.Release|Win32.Build.0 = Release|Win32
+		{DD4DC25B-2455-480F-A74C-FD9B2B494913}.Release|x64.ActiveCfg = Release|x64
+		{DD4DC25B-2455-480F-A74C-FD9B2B494913}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
