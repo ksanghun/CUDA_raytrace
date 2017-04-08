@@ -345,10 +345,14 @@ int main(int argc, char* argv[]) {
 	ts = std::chrono::steady_clock::now();
 	// memcpy from host to device (constant memory)
 	cudaMemcpyToSymbol(d_sphere, h_sphere, sizeof(Sphere) * M_SPHERES);
-	delete[] h_sphere;
 
 	te = std::chrono::steady_clock::now();
 	reportTime("Host to Device(cudaMemcpyToSymbol) Time: ", te - ts);
+
+	unsigned width = 512, height = 512;
+	float invWidth = 1 / float(width), invHeight = 1 / float(height);
+	float fov = 45, aspectratio = width / float(height);
+	float angle = tan(M_PI * 0.5 * fov / 180.);
 
 	// allocate device memory for hit data
 	ts = std::chrono::steady_clock::now();
@@ -356,21 +360,18 @@ int main(int argc, char* argv[]) {
 	cudaMalloc((void**)&d_a, IMG_RES*IMG_RES * sizeof(Vec3f));
 	te = std::chrono::steady_clock::now();
 	reportTime("Host to Device(cudaMalloc) Time: ", te - ts);
+	
+	checkCUDAError("pre-raytraceRay error");
 
 	// launch the grid of threads
 	dim3 dimGrid(IMG_RES / NTPB, IMG_RES / NTPB);
 	dim3 dimBlock(NTPB, NTPB);
-
-	unsigned width = 512, height = 512;
-	float invWidth = 1 / float(width), invHeight = 1 / float(height);
-	float fov = 45, aspectratio = width / float(height);
-	float angle = tan(M_PI * 0.5 * fov / 180.);
+		
 	Vec3f* h_a = new Vec3f[IMG_RES*IMG_RES];
-
-	checkCUDAError("pre-raytraceRay error");
-
-	ts = std::chrono::steady_clock::now();
 	unsigned char* imgbuff = new unsigned char[width*height * 3];
+	
+	ts = std::chrono::steady_clock::now();
+
 
 	for (int i = 0; i < 1000; i++)
 	{
@@ -399,5 +400,6 @@ int main(int argc, char* argv[]) {
 	// clean up
 	delete[] imgbuff;
 	delete[] h_a;
+	delete[] h_sphere;
 	cudaFree(d_a);
 }
