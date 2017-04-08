@@ -333,9 +333,6 @@ int main(int argc, char* argv[]) {
 	Vec3f* a = new Vec3f[IMG_RES*IMG_RES];
 	unsigned char* imgbuff = new unsigned char[width*height * 3];
 	
-	std::chrono::steady_clock::time_point ts, te;
-	ts = std::chrono::steady_clock::now();
-
 	for (int i = 0; i < 1000; i++){
 		fov += 0.1;
 		angle = tan(M_PI * 0.5 * fov / 180.);
@@ -353,9 +350,6 @@ int main(int argc, char* argv[]) {
 		SaveImage(fname, imgbuff, width, height);
 	}
 
-	te = std::chrono::steady_clock::now();
-	reportTime("Render Time: ", te - ts);
-	
 	// clean up
 	delete[] imgbuff;
 	delete[] a;

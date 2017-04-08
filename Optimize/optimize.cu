@@ -341,13 +341,8 @@ int main(int argc, char* argv[]) {
 	h_sphere[5].init(center, 3.0f, sc, 0.0f, 0.0f, ec);
 
 
-	std::chrono::steady_clock::time_point ts, te;
-	ts = std::chrono::steady_clock::now();
 	// memcpy from host to device (constant memory)
 	cudaMemcpyToSymbol(d_sphere, h_sphere, sizeof(Sphere) * M_SPHERES);
-
-	te = std::chrono::steady_clock::now();
-	reportTime("Host to Device(cudaMemcpyToSymbol) Time: ", te - ts);
 
 	unsigned width = 512, height = 512;
 	float invWidth = 1 / float(width), invHeight = 1 / float(height);
@@ -355,29 +350,24 @@ int main(int argc, char* argv[]) {
 	float angle = tan(M_PI * 0.5 * fov / 180.);
 
 	// allocate device memory for hit data
-	ts = std::chrono::steady_clock::now();
 	Vec3f* d_a;
 	cudaMalloc((void**)&d_a, IMG_RES*IMG_RES * sizeof(Vec3f));
-	te = std::chrono::steady_clock::now();
-	reportTime("Host to Device(cudaMalloc) Time: ", te - ts);
-	
-	checkCUDAError("pre-raytraceRay error");
 
-	// launch the grid of threads
+	// grid of threads
 	dim3 dimGrid(IMG_RES / NTPB, IMG_RES / NTPB);
 	dim3 dimBlock(NTPB, NTPB);
 		
 	Vec3f* h_a = new Vec3f[IMG_RES*IMG_RES];
 	unsigned char* imgbuff = new unsigned char[width*height * 3];
-	
-	ts = std::chrono::steady_clock::now();
-
 
 	for (int i = 0; i < 1000; i++)
 	{
 		fov += 0.1;
 		angle = tan(M_PI * 0.5 * fov / 180.);
+
+		// launch the kernel
 		render << <dimGrid, dimBlock >> > (fov, angle, aspectratio, invWidth, invHeight, d_a);
+		// memcpy from device to host
 		cudaMemcpy(h_a, d_a, IMG_RES*IMG_RES * sizeof(Vec3f), cudaMemcpyDeviceToHost);
 		
 		// save image
@@ -392,11 +382,6 @@ int main(int argc, char* argv[]) {
 		SaveImage(fname, imgbuff, width, height);
 	}
 
-	te = std::chrono::steady_clock::now();
-	reportTime("Render Time: ", te - ts);
-
-	checkCUDAError("raytraceRay error");
-		
 	// clean up
 	delete[] imgbuff;
 	delete[] h_a;
