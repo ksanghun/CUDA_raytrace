@@ -135,14 +135,12 @@ public:
 
 };
 
-Sphere d_sphere[M_SPHERES];
-
 float mix(const float &a, const float &b, const float &mix)
 {
 	return b * mix + a * (1 - mix);
 }
 
-void trace(Vec3f &rayorig, Vec3f &raydir, const int &depth, Vec3f* pixel, int k)
+void trace(Vec3f &rayorig, Vec3f &raydir, const int &depth, Vec3f* pixel, Sphere* sphere, int k)
 {
 	float tnear = INFINITY;
 	int idx = -1;
@@ -150,7 +148,7 @@ void trace(Vec3f &rayorig, Vec3f &raydir, const int &depth, Vec3f* pixel, int k)
 	// find intersection of this ray with the sphere in the scene
 	for (unsigned i = 0; i < M_SPHERES; ++i) {
 		float t0 = INFINITY, t1 = INFINITY;
-		if (d_sphere[i].intersect(rayorig, raydir, t0, t1)) {
+		if (sphere[i].intersect(rayorig, raydir, t0, t1)) {
 			if (t0 < 0) t0 = t1;
 			if (t0 < tnear) {   // find the closest intersection of speres
 				tnear = t0;
@@ -167,7 +165,7 @@ void trace(Vec3f &rayorig, Vec3f &raydir, const int &depth, Vec3f* pixel, int k)
 		Vec3f surfaceColor;
 		surfaceColor.init(0);
 		Vec3f phit = rayorig + raydir * tnear; // point of intersection
-		Vec3f nhit = phit - d_sphere[idx].getCenter(); // normal at the intersection point
+		Vec3f nhit = phit - sphere[idx].getCenter(); // normal at the intersection point
 		nhit.normalize(); // normalize normal direction
 
 		float bias = 1e-4; // add some bias to the point from which we will be tracing
@@ -178,7 +176,7 @@ void trace(Vec3f &rayorig, Vec3f &raydir, const int &depth, Vec3f* pixel, int k)
 			nhit.z = -nhit.z;
 			inside = true;
 		}
-		if ((d_sphere[idx].getTransparency() > 0 || d_sphere[idx].getReflection() > 0) && depth < MAX_RAY_DEPTH) {
+		if ((sphere[idx].getTransparency() > 0 || sphere[idx].getReflection() > 0) && depth < MAX_RAY_DEPTH) {
 			float facingratio = -raydir.dot(nhit);
 			
 			// change the mix value to tweak the effect
@@ -188,39 +186,39 @@ void trace(Vec3f &rayorig, Vec3f &raydir, const int &depth, Vec3f* pixel, int k)
 			// are already normalized)
 			Vec3f refldir = raydir - nhit * 2 * raydir.dot(nhit);
 			refldir.normalize();
-			trace(phit + nhit * bias, refldir, depth + 1, pixel, k);
+			trace(phit + nhit * bias, refldir, depth + 1, pixel, sphere, k);
 			
 			Vec3f refraction; 
 			refraction.init(0);
 			
 			// if the sphere is also transparent compute refraction ray (transmission)
-			if (d_sphere[idx].getTransparency()) {
+			if (sphere[idx].getTransparency()) {
 				float ior = 1.1, eta = (inside) ? ior : 1 / ior; // are we inside or outside the surface?
 				float cosi = -nhit.dot(raydir);
 				float k = 1 - eta * eta * (1 - cosi * cosi);
 				Vec3f refrdir = raydir * eta + nhit * (eta *  cosi - sqrt(k));
 				refrdir.normalize();
-				trace(phit + nhit * bias, refldir, depth + 1, pixel, k);
+				trace(phit + nhit * bias, refldir, depth + 1, pixel, sphere, k);
 			}
 			// the result is a mix of reflection and refraction (if the sphere is transparent)
 			Vec3f reflection = pixel[k];
 			surfaceColor = (
 				reflection * fresneleffect +
-				refraction * (1 - fresneleffect) * d_sphere[idx].getTransparency()) * d_sphere[idx].getSurfaceCr();
+				refraction * (1 - fresneleffect) * sphere[idx].getTransparency()) * sphere[idx].getSurfaceCr();
 		}
 		else {
 			// it's a diffuse object, no need to raytrace any further
 			for (unsigned i = 0; i < M_SPHERES; ++i) {
-				if (d_sphere[i].getEmissionCr().x > 0) {
+				if (sphere[i].getEmissionCr().x > 0) {
 					// this is a light
 					Vec3f transmission;
 					transmission.init(1);
-					Vec3f lightDirection = d_sphere[i].getCenter() - phit;
+					Vec3f lightDirection = sphere[i].getCenter() - phit;
 					lightDirection.normalize();
 					for (unsigned j = 0; j < M_SPHERES; ++j) {
 						if (i != j) {
 							float t0, t1;
-							if (d_sphere[j].intersect(phit + nhit * bias, lightDirection, t0, t1)) {
+							if (sphere[j].intersect(phit + nhit * bias, lightDirection, t0, t1)) {
 								transmission.init(0.7f);
 								break;
 							}
@@ -229,16 +227,16 @@ void trace(Vec3f &rayorig, Vec3f &raydir, const int &depth, Vec3f* pixel, int k)
 
 					float fCoff = nhit.dot(lightDirection);
 					if (fCoff < 0)	fCoff = 0.0f;
-					surfaceColor += d_sphere[idx].getSurfaceCr() * transmission *	fCoff * d_sphere[i].getEmissionCr();
+					surfaceColor += sphere[idx].getSurfaceCr() * transmission *	fCoff * sphere[i].getEmissionCr();
 				}
 			}			
 		}
-		pixel[k] = surfaceColor + d_sphere[idx].getEmissionCr();
+		pixel[k] = surfaceColor + sphere[idx].getEmissionCr();
 	}
 
 }
 
-void render(float fov, float viewangle, float aspectratio, float iwidth, float iheight, Vec3f* pixel)
+void render(float fov, float viewangle, float aspectratio, float iwidth, float iheight, Vec3f* pixel, Sphere* sphere)
 {
 	for (unsigned y = 0; y < IMG_RES; ++y) {
 		for (unsigned x = 0; x < IMG_RES; ++x) {
@@ -255,7 +253,7 @@ void render(float fov, float viewangle, float aspectratio, float iwidth, float i
 			//===========================================//
 
 			// trace //
-			trace(rayorig, raydir, 0, pixel, k);
+			trace(rayorig, raydir, 0, pixel, sphere, k);
 		}
 	}
 }
@@ -305,62 +303,49 @@ void reportTime(const char* msg, std::chrono::steady_clock::duration span) {
 
 int main(int argc, char* argv[]) {
 
-	Sphere* h_sphere = new Sphere[M_SPHERES];
+	Sphere* sphere = new Sphere[M_SPHERES];
 
 	Vec3f center, sc, ec;
 	center.init(0.0f, -10004.0f, -20.0f);	sc.init(0.30f, 0.30f, 0.30f);	ec.init(0.0f);
-	h_sphere[0].init(center, 10000.0f, sc, 0.0f, 0.0f, ec);
+	sphere[0].init(center, 10000.0f, sc, 0.0f, 0.0f, ec);
 
 	center.init(0.0, 0, -20);	sc.init(1.00, 0.32, 0.36);	ec.init(0.1f);
-	h_sphere[1].init(center, 4.0f, sc, 1.0f, 0.5f, ec);
+	sphere[1].init(center, 4.0f, sc, 1.0f, 0.5f, ec);
 
 	center.init(5.0, -1, -15);	sc.init(0.10, 0.96, 0.96);	ec.init(0.2f);
-	h_sphere[2].init(center, 2.0f, sc, 1.0f, 0.0f, ec);
+	sphere[2].init(center, 2.0f, sc, 1.0f, 0.0f, ec);
 
 	center.init(5.0, 0, -25);	sc.init(0.3f, 0.07, 0.97);	ec.init(0.2f);
-	h_sphere[3].init(center, 3.0f, sc, 1.0f, 0.0f, ec);
+	sphere[3].init(center, 3.0f, sc, 1.0f, 0.0f, ec);
 
 	center.init(-5.5, 0, -15);	sc.init(0.10, 0.99, 0.20);	ec.init(0.3f);
-	h_sphere[4].init(center, 3.0f, sc, 1.0f, 0.0f, ec);
+	sphere[4].init(center, 3.0f, sc, 1.0f, 0.0f, ec);
 
 	// light
 	center.init(-10.0, 50, 30);	sc.init(0.00, 0.00, 0.00);	ec.init(4.0f);
-	h_sphere[5].init(center, 3.0f, sc, 0.0f, 0.0f, ec);
-
-	std::chrono::steady_clock::time_point ts, te;
-	ts = std::chrono::steady_clock::now();
-
-	memcpy(d_sphere, h_sphere, sizeof(Sphere) * M_SPHERES);
-	delete[] h_sphere;
-
-	// allocate memory for hit data
-	Vec3f* d_a = new Vec3f[IMG_RES*IMG_RES];
-	te = std::chrono::steady_clock::now();
-	reportTime("Memcpy MemAlloc Time: ", te - ts);
-
+	sphere[5].init(center, 3.0f, sc, 0.0f, 0.0f, ec);
+		
 	unsigned width = 512, height = 512;
 	float invWidth = 1 / float(width), invHeight = 1 / float(height);
 	float fov = 45, aspectratio = width / float(height);
 	float angle = tan(M_PI * 0.5 * fov / 180.);
-	Vec3f* h_a = new Vec3f[IMG_RES*IMG_RES];
-
-
-	ts = std::chrono::steady_clock::now();
+	
+	Vec3f* a = new Vec3f[IMG_RES*IMG_RES];
 	unsigned char* imgbuff = new unsigned char[width*height * 3];
 	
+	std::chrono::steady_clock::time_point ts, te;
+	ts = std::chrono::steady_clock::now();
+
 	for (int i = 0; i < 1000; i++){
 		fov += 0.1;
 		angle = tan(M_PI * 0.5 * fov / 180.);
-		render(fov, angle, aspectratio, invWidth, invHeight, d_a);
-		
-		// copy hit data to host
-		memcpy(h_a, d_a, IMG_RES*IMG_RES*sizeof(Vec3f));
-		
+		render(fov, angle, aspectratio, invWidth, invHeight, a, sphere);
+				
 		// save image
 		for (unsigned i = 0; i < width * height; ++i) {
-			imgbuff[i * 3] = (unsigned char)(std::min(float(1), h_a[i].x) * 255);
-			imgbuff[i * 3 + 1] = (unsigned char)(std::min(float(1), h_a[i].y) * 255);
-			imgbuff[i * 3 + 2] = (unsigned char)(std::min(float(1), h_a[i].z) * 255);
+			imgbuff[i * 3] = (unsigned char)(std::min(float(1), a[i].x) * 255);
+			imgbuff[i * 3 + 1] = (unsigned char)(std::min(float(1), a[i].y) * 255);
+			imgbuff[i * 3 + 2] = (unsigned char)(std::min(float(1), a[i].z) * 255);
 
 		}
 		char fname[64] = { 0, };
@@ -373,6 +358,7 @@ int main(int argc, char* argv[]) {
 	
 	// clean up
 	delete[] imgbuff;
-	delete[] h_a;
+	delete[] a;
+	delete[] sphere;
 }
 
